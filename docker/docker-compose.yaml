@@ -1,0 +1,64 @@
+services:
+  api:
+    build:
+      context: ../api
+      dockerfile: ../docker/api/Dockerfile
+    container_name: symfony_api
+    volumes:
+      - ../api:/var/www/html
+    networks:
+      - app-network
+    ports:
+      - "9000:9000"
+    depends_on:
+      - db
+
+  ui:
+    build:
+      context: ../ui
+      dockerfile: ../docker/ui/Dockerfile
+    container_name: react_ui
+    volumes:
+      - ../ui:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  db:
+    image: postgis/postgis:14-3.4
+    container_name: postgres_db
+    volumes:
+      - ./postgres/postgres.conf:/etc/postgresql/postgresql.conf
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ecofinder
+      POSTGRES_USER: ecofinder
+      POSTGRES_PASSWORD: ecofinder
+    networks:
+      - app-network
+    ports:
+      - "5433:5432"
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/nginx.conf
+    networks:
+      - app-network
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+      - ui
+
+networks:
+  app-network:
+
+volumes:
+  db_data:
+
